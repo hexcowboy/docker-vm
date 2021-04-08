@@ -1,57 +1,40 @@
 # Docker VM
 Docker has the capabilities to create virtual machines, however the majority of it's use case right now is to host ephemeral containers, meaning they live short and aren't persistent. To make a Docker container behave more like a VM, it needs to have the following qualities:
 
-1. **Persistence.** When you shut down and restart the VM, it should remember your file system structure.
-2. **User interface.** For a lot of users, a default bash shell is not enough and a TUI or GUI is needed.
-
-## Persistence
-The solution to the first problem is to utilize a `docker-compose.yml` volumes to map the root filesystem of the container to a directory on the host machine. The following is an example of how a volume is configured:
-
-```yaml
-version: 3.8
-
-services:
-  virtualmachine:
-    image: ubuntu:latest
-    volumes:
-      - "rootfs:/"
-
-volumes:
-  rootfs:
-```
-
-This creates a mountpoint that maps from the root of the container to a point on the filesystem, usually `/var/lib/docker/volumes`. This mount point can be found by running the following commands:
-
-```bash
-$ docker volume ls
-local     virtualmachine_rootfs
-
-$ docker volume inspect virtualmachine_rootfs | grep Mountpoint
-    "Mountpoint": "/var/lib/docker/volumes/virtualmachine_rootfs/_data",
-```
+1. **User Interface.** For a lot of users, a default bash shell is not enough and a TUI or GUI is needed.
+2. **Persistence.** When you shut down and restart the VM, it should remember your file system structure.
 
 ## User Interface
-The `Dockerfile` can be used to automate the setup of a new container. Many projects exist already that create an X environment with an accompanying browser-based graphics server. This allows the GUI to be accessed by browsing to the graphics server from the host machine in a web browser. A simpler way to run graphics would be to use xterm. Here's an easy way to set up a graphics server in a `Dockerfile`:
+A simple solution to this problem is to install an X server.
 
+### macOS
+1. Install the latest version of [XQuartz](https://www.xquartz.org/)
+    - Or use brew: `brew install --cask xquartz`
+2. Launch XQuartz and in the menu, choose `XQuartz` -> `Preferences` -> `Security`
+3. Check the box for `Allow connections from network clients` and restart XQuartz
+4. In your macOS terminal, type `xhost + 127.0.0.1`
+
+### Windows
+1. Install the latest version of [VcXsrv](https://sourceforge.net/projects/vcxsrv/)
+    - Or use choco: `choco install vcxsrv`
+2. Launch VcXsrv to start the setup
+3. Use all default settings, **checking** `✅ Disable access control`
+
+### Linux
+(wip)
+
+This Dockerfile will run `xterm` which is a simple GUI terminal.
 ```Dockerfile
 FROM ubuntu:latest
-
-RUN apt update && apt install xterm
+RUN apt-get update && apt-get install -y xterm
+CMD xterm
 ```
 
-An environment variable also needs to be set, so the `docker-compose` file gets updated to:
-
-```yaml
-version: 3.8
-
-services:
-  virtualmachine:
-    image: ubuntu:latest
-    environment:
-      - "DISPLAY=${DISPLAY}"
-    volumes:
-      - "rootfs:/"
-
-volumes:
-  rootfs:
+And now we can run our container, setting the `DISPLAY` environment variable to [`host.docker.internal:0`](https://docs.docker.com/docker-for-mac/networking/#use-cases-and-workarounds).
 ```
+$ docker build -t vm .
+$ docker run -e DISPLAY=host.docker.internal:0 vm
+```
+
+## Persistence
+-- NOT YET WORKING ---
