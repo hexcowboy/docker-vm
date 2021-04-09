@@ -37,4 +37,22 @@ $ docker run -e DISPLAY=host.docker.internal:0 vm
 ```
 
 ## Persistence
--- NOT YET WORKING ---
+Since there is no way to mount the entire `/` filesystem to volume in Docker, we have to hand-select our persistent directories. Using the manpage for [`file-heirarchy`](https://man7.org/linux/man-pages/man7/file-hierarchy.7.html) we can get a good idea of what needs to happen in our `docker-compose.yml`:
+
+```yaml
+version: "3.8"
+
+services:
+  virtualmachine:
+    build: .
+    environment:
+      - "DISPLAY=host.docker.internal:0"
+    volumes:
+      - "./bin:/bin"
+      - "./etc:/etc"
+      - "./home:/home"
+      - "./lib:/lib"
+      - "./opt:/opt"
+      - "./usr:/usr"
+      - "./var:/var"
+```
